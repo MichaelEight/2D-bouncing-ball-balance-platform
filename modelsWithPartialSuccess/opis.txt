@@ -1,0 +1,7 @@
+200 - learnt to hold 0,0 ball steady
+380 - model with quite stable <-3,3> X displacement
+840 - partial <-6,6> control. Right side sucks. Forcing x=50.0 now
+1080 - no progress. adding reward for keeping negative rotation. also x=100.0
+1160 - może być git
+
+590 - decently reliable <-5,5>X

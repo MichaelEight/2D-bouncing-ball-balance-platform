@@ -1,0 +1,33 @@
+inputs:
+    ball position x
+    ball position y
+    ball velocity x (because vector)
+    ball velocity y (because vector)
+    current platform angle (theta)
+    current distance from target X
+outputs:
+    platform target angle (phi)
+
+to consider - fluent or instant rotation of the platform? 
+
+rewards:
+time without lose +
+each bounce ++
+|x_target - x_ball| ~= 0 +++
+
+finish attempt when ball gets out of bounds
+
+special challenge = try to optimize strategy to keep the ball at y_target (range of y or y higher than # or smth like this)
+
+LEVELS:
+1. ball rolling on the plane - might be thrown up, but no bounce
+2. add perfect bounce
+
+Target:
+keep the ball around specified X
+
+
+
+
+note
+after each restart, spawn the ball in a random position with random velocity (prepare generating alg, so that it is always possible to hit the ball)

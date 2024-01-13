@@ -1,0 +1,27 @@
+def calculate_reward(angle, ballX, ballY, velX, velY, p1X, p1Y, p2X, p2Y, distance_to_target_x):
+    # Constants for reward calculation
+    distance_weight = -1.0  # Penalize based on distance
+    stability_reward = 2.0  # Reward for keeping the ball stable
+    angle_penalty = -0.1  # Penalize the platform's angle that increases distance
+    ball_loss_penalty = -200.0  # Large penalty for losing the ball
+
+    # Calculate distance reward
+    distance_reward = distance_weight * distance_to_target_x
+
+    # Reward for reducing velocity towards the center
+    velocity_reward = stability_reward * -abs(velX) if (ballX > 0 and velX < 0) or (ballX < 0 and velX > 0) else -abs(velX)
+
+    # Calculate angle penalty
+    # If the ball is to the right and the platform rotates right, or vice versa, penalize heavily
+    if (ballX > 0 and angle > 0) or (ballX < 0 and angle < 0):
+        angle_reward = angle_penalty * abs(angle)
+    else:
+        angle_reward = 0
+
+    # Calculate ball loss penalty
+    ball_loss_reward = ball_loss_penalty if ball_out_of_bounds_condition([ballX, ballY]) else 0
+
+    # Total reward
+    total_reward = distance_reward + velocity_reward + angle_reward + ball_loss_reward
+
+    return total_reward
