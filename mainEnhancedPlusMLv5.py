@@ -10,6 +10,7 @@ import numpy as np
 import tensorflow as tf
 from keras import Sequential
 from keras.layers import Dense
+from keras.utils import to_categorical
 import os
 
 ########## WINDOW HANDLER ##########
@@ -226,38 +227,53 @@ def pointsDistance(A, B):
 # Define a simple neural network model using TensorFlow
 def create_model():
     model = tf.keras.Sequential([
-        # Attempt to reduce overfitting by reducing number of layers
-        tf.keras.layers.Dense(6, activation='relu', input_shape=(6,)), 
+        # Input layer: Adjust the input shape to match your features (e.g., 6 features here)
+        tf.keras.layers.Dense(6, activation='relu', input_shape=(6,)),
+        
+        # Hidden layers: You can adjust the number of neurons and layers as needed
         tf.keras.layers.Dense(5, activation='relu'),
         tf.keras.layers.Dense(5, activation='relu'),
-        tf.keras.layers.Dense(1)  # Output layer predicting the target angle phi
+        
+        # Output layer: 3 neurons for 3 actions, with softmax to output probabilities
+        tf.keras.layers.Dense(3, activation='softmax')
     ])
-    model.compile(optimizer='adam', loss='mse')
+    
+    # Compile the model with categorical crossentropy for the multi-class classification
+    # and choose an optimizer (e.g., 'adam').
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    
     return model
 
 # Initialize the model
 model = create_model()
 
+def apply_action(action, phi, step=5.0):
+    if action == 0:  # Turn left
+        return max(phi - step, -limit_phi)
+    elif action == 2:  # Turn right
+        return min(phi + step, limit_phi)
+    return phi  # No change for action == 1 (stop)
+
 def ai_agent(current_data):
     """
-    AI agent function that predicts the target phi based on current data, including target_x.
+    AI agent function that decides the action (turn left, stop, turn right) based on current data.
 
-    :param current_data: Current data - [x, y, vel_x, vel_y, target_x]
-    :return: Predicted target phi
+    :param current_data: Current data - [x, y, vel_x, vel_y, phi, target_x].
+    :return: New phi after applying the predicted action.
     """
     x, y, vel_x, vel_y, phi, target_x = current_data
 
     # Normalize the input data
-    raw_input_data = np.array([x, y, vel_x, vel_y, phi, target_x])
-    normalized_input_data = input_normalizer.transform(raw_input_data)
+    normalized_input_data = input_normalizer.transform(np.array([x, y, vel_x, vel_y, phi, target_x]))
 
-    # Predict the target phi using the trained model
-    target_phi = model.predict(normalized_input_data.reshape(1, -1))[0][0]
+    # Predict the action using the trained model
+    action_probabilities = model.predict(normalized_input_data.reshape(1, -1))[0]
+    predicted_action = np.argmax(action_probabilities)
 
-    # Clip the target_phi to the [-limit_phi, limit_phi] range
-    target_phi = np.clip(target_phi, -limit_phi, limit_phi)
+    # Apply the predicted action to get the new phi
+    new_phi = apply_action(predicted_action, phi)
 
-    return target_phi
+    return new_phi
 
 def save_model(model, iteration, data):
     global average_rewards
@@ -334,6 +350,10 @@ def update_model_with_rewards():
     train_targets = targets[:split_index]
     val_features = features[split_index:]
     val_targets = targets[split_index:]
+
+    # Apply one-hot encoding to the targets
+    train_targets = to_categorical(train_targets, num_classes=3)
+    val_targets = to_categorical(val_targets, num_classes=3)
 
     # Train the model with the collected data
     model.fit(train_features, train_targets, validation_data=(val_features, val_targets), epochs=10, batch_size=32)
@@ -624,9 +644,12 @@ def calculate_bounce_reward(previous_data, current_data):
 
 
 
+# TODO introduce var, which will control the method of measurements i.e.
+# 0 - continuous (get ball position and velocity all the time)
+# 1 - per bounce (get ball position and velocity after a bounce)
 
 # Directory to save model files
-MODEL_DIR = 'saved_modelsv4/'
+MODEL_DIR = 'saved_modelsv5/'
 
 ## WINDOW, MATH, SIMULATION HIDDEN VARS
 pi = 3.14159
@@ -647,7 +670,7 @@ deltaTime_counter = 0 # for FPS measurements
 deltaTime_sum = 0
 average_fps = 0.0
 fps_average_of = 10 # How many frames before set new FPS
-enableRender = False
+enableRender = True
 
 ## DRAWING PARAMS
 lineWidth = 10.0
@@ -685,8 +708,8 @@ rangeXpos = [-50.0, 50.0]
 rangeYPos = [0.0, 0.0]
 rangeXTarget = [0.0, 0.0]
 enableLearning = True
-iterations_to_collect_data = 10
-number_of_simulated_pairs = 10
+iterations_to_collect_data = 1
+number_of_simulated_pairs = 5
 
 ## AI/ML Rewards
 targetX = 0.0

@@ -226,21 +226,13 @@ def pointsDistance(A, B):
 # Define a simple neural network model using TensorFlow
 def create_model():
     model = tf.keras.Sequential([
-        # Input layer: Adjust the input shape to match your features (e.g., 6 features here)
-        tf.keras.layers.Dense(6, activation='relu', input_shape=(6,)),
-        
-        # Hidden layers: You can adjust the number of neurons and layers as needed
+        # Attempt to reduce overfitting by reducing number of layers
+        tf.keras.layers.Dense(6, activation='relu', input_shape=(6,)), 
         tf.keras.layers.Dense(5, activation='relu'),
         tf.keras.layers.Dense(5, activation='relu'),
-        
-        # Output layer: 3 neurons for 3 actions, with softmax to output probabilities
-        tf.keras.layers.Dense(3, activation='softmax')
+        tf.keras.layers.Dense(1)  # Output layer predicting the target angle phi
     ])
-    
-    # Compile the model with categorical crossentropy for the multi-class classification
-    # and choose an optimizer (e.g., 'adam').
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    
+    model.compile(optimizer='adam', loss='mse')
     return model
 
 # Initialize the model
@@ -260,7 +252,8 @@ def ai_agent(current_data):
     normalized_input_data = input_normalizer.transform(raw_input_data)
 
     # Predict the target phi using the trained model
-    target_phi = model.predict(normalized_input_data.reshape(1, -1))[0][0]
+    with tf.device('/device:GPU:0'):
+        target_phi = model.predict(normalized_input_data.reshape(1, -1))[0][0]
 
     # Clip the target_phi to the [-limit_phi, limit_phi] range
     target_phi = np.clip(target_phi, -limit_phi, limit_phi)
@@ -344,7 +337,8 @@ def update_model_with_rewards():
     val_targets = targets[split_index:]
 
     # Train the model with the collected data
-    model.fit(train_features, train_targets, validation_data=(val_features, val_targets), epochs=10, batch_size=32)
+    with tf.device('/device:GPU:0'):
+        model.fit(train_features, train_targets, validation_data=(val_features, val_targets), epochs=10, batch_size=32)
 
     # Evaluate model performance on validation set
     evaluation = model.evaluate(val_features, val_targets)
@@ -634,7 +628,7 @@ def calculate_bounce_reward(previous_data, current_data):
 
 
 # Directory to save model files
-MODEL_DIR = 'saved_modelsv5/'
+MODEL_DIR = 'saved_modelsv4/'
 
 ## WINDOW, MATH, SIMULATION HIDDEN VARS
 pi = 3.14159
@@ -655,7 +649,7 @@ deltaTime_counter = 0 # for FPS measurements
 deltaTime_sum = 0
 average_fps = 0.0
 fps_average_of = 10 # How many frames before set new FPS
-enableRender = False
+enableRender = True
 
 ## DRAWING PARAMS
 lineWidth = 10.0
