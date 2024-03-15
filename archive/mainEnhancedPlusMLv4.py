@@ -226,21 +226,13 @@ def pointsDistance(A, B):
 # Define a simple neural network model using TensorFlow
 def create_model():
     model = tf.keras.Sequential([
-        # Input layer: Adjust the input shape to match your features (e.g., 6 features here)
-        tf.keras.layers.Dense(6, activation='relu', input_shape=(6,)),
-        
-        # Hidden layers: You can adjust the number of neurons and layers as needed
+        # Attempt to reduce overfitting by reducing number of layers
+        tf.keras.layers.Dense(6, activation='relu', input_shape=(6,)), 
         tf.keras.layers.Dense(5, activation='relu'),
         tf.keras.layers.Dense(5, activation='relu'),
-        
-        # Output layer: 3 neurons for 3 actions, with softmax to output probabilities
-        tf.keras.layers.Dense(3, activation='softmax')
+        tf.keras.layers.Dense(1)  # Output layer predicting the target angle phi
     ])
-    
-    # Compile the model with categorical crossentropy for the multi-class classification
-    # and choose an optimizer (e.g., 'adam').
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    
+    model.compile(optimizer='adam', loss='mse')
     return model
 
 # Initialize the model
@@ -634,7 +626,7 @@ def calculate_bounce_reward(previous_data, current_data):
 
 
 # Directory to save model files
-MODEL_DIR = 'saved_modelsv5/'
+MODEL_DIR = 'saved_modelsv4/'
 
 ## WINDOW, MATH, SIMULATION HIDDEN VARS
 pi = 3.14159
